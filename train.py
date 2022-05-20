@@ -7,13 +7,13 @@ import logging
 import argparse
 import math
 import os
-import sys
 import random
+import time
+
 import numpy
 
 from sklearn import metrics
-from time import strftime, localtime
-
+import datetime
 from transformers import BertModel
 
 import torch
@@ -25,35 +25,33 @@ from models import LSTM, IAN, MemNet, RAM, TD_LSTM, TC_LSTM, Cabasc, ATAE_LSTM, 
 from models.aen import CrossEntropyLoss_LSR, AEN_BERT
 from models.bert_spc import BERT_SPC
 
-logger = logging.getLogger('E2E-ABSA')
-formatter = logging.Formatter(f'%(asctime)s|%(levelname)s|%(name)s| %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
-stdout = logging.StreamHandler(sys.stdout)
-stdout.setLevel(logging.INFO)
-stdout.setFormatter(formatter)
-logger.addHandler(stdout)
-
-
 class Instructor:
     def __init__(self, opt):
         self.opt = opt
-
+        print('加载Bert...')
         if 'bert' in opt.model_name:
             tokenizer = Tokenizer4Bert(opt.max_seq_len, opt.pretrained_bert_name)
             bert = BertModel.from_pretrained(opt.pretrained_bert_name)
+            print('Bert加载完毕.')
+            print(f'>>> 使用设备:{opt.device} 训练.')
             self.model = opt.model_class(bert, opt).to(opt.device)
         else:
             tokenizer = build_tokenizer(
                 fnames=[opt.dataset_file['train'], opt.dataset_file['test']],
                 max_seq_len=opt.max_seq_len,
                 dat_fname='{0}_tokenizer.dat'.format(opt.dataset))
+            print('加载预训练向量...')
             embedding_matrix = build_embedding_matrix(
                 word2idx=tokenizer.word2idx,
                 embed_dim=opt.embed_dim,
                 dat_fname='{0}_{1}_embedding_matrix.dat'.format(str(opt.embed_dim), opt.dataset))
+            print('预训练向量加载完毕.')
             self.model = opt.model_class(embedding_matrix, opt).to(opt.device)
 
         self.trainset = ABSADataset(opt.dataset_file['train'], tokenizer)
+        print(f'> training dataset count: {len(self.trainset.data)}.')
         self.testset = ABSADataset(opt.dataset_file['test'], tokenizer)
+        print(f'> testing dataset count: {len(self.testset.data)}.')
         assert 0 <= opt.valset_ratio < 1
         if opt.valset_ratio > 0:
             valset_len = int(len(self.trainset) * opt.valset_ratio)
@@ -62,7 +60,7 @@ class Instructor:
             self.valset = self.testset
 
         if opt.device.type == 'cuda':
-            logger.info('cuda memory allocated: {}'.format(torch.cuda.memory_allocated(device=opt.device.index)))
+            print('cuda memory allocated: {}'.format(torch.cuda.memory_allocated(device=opt.device.index)))
         self._print_args()
 
     def _print_args(self):
@@ -73,11 +71,11 @@ class Instructor:
                 n_trainable_params += n_params
             else:
                 n_nontrainable_params += n_params
-        logger.info(
+        print(
             '> n_trainable_params: {0}, n_nontrainable_params: {1}'.format(n_trainable_params, n_nontrainable_params))
-        logger.info('> training arguments:')
+        print('> training arguments:')
         for arg in vars(self.opt):
-            logger.info('>>> {0}: {1}'.format(arg, getattr(self.opt, arg)))
+            print('>>> {0}: {1}'.format(arg, getattr(self.opt, arg)))
 
     def _reset_params(self):
         for child in self.model.children():
@@ -97,8 +95,8 @@ class Instructor:
         global_step = 0
         path = None
         for i_epoch in range(self.opt.num_epoch):
-            logger.info('>' * 100)
-            logger.info('epoch: {}'.format(i_epoch))
+            print('>' * 100)
+            print('>>> epoch: {}.'.format(i_epoch))
             n_correct, n_total, loss_total = 0, 0, 0
             # switch model to training mode
             self.model.train()
@@ -119,24 +117,25 @@ class Instructor:
                 n_total += len(outputs)
                 loss_total += loss.item() * len(outputs)
                 if global_step % self.opt.log_step == 0:
+                    print('E2E-ABSA >>>', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
                     train_acc = n_correct / n_total
                     train_loss = loss_total / n_total
-                    logger.info('loss: {:.4f}, acc: {:.4f}'.format(train_loss, train_acc))
+                    print('loss: {:.4f}, acc: {:.4f}'.format(train_loss, train_acc))
 
-            val_acc, val_f1 = self._evaluate_acc_f1(val_data_loader)
-            logger.info('> val_acc: {:.4f}, val_f1: {:.4f}'.format(val_acc, val_f1))
-            if val_acc > max_val_acc:
-                max_val_acc = val_acc
+            val_acc, val_prec, val_rec, val_f1 = self._evaluate_acc_f1(val_data_loader)
+            print('E2E-ABSA >>>', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            print('>>> val_acc: {:.4f}, val_precision: {:.4f} val_recall: {:.4f}, val_f1: {:.4f}'.format(val_acc, val_prec, val_rec, val_f1))
+            if val_f1 > max_val_f1:
+                max_val_f1 = val_f1
                 max_val_epoch = i_epoch
                 if not os.path.exists('state_dict'):
                     os.mkdir('state_dict')
-                path = 'state_dict/{0}_{1}_val_acc_{2}'.format(self.opt.model_name, self.opt.dataset, round(val_acc, 4))
+                path = 'state_dict/{0}_{1}_val_f1_{2}'.format(self.opt.model_name, self.opt.dataset, round(val_acc, 4))
                 torch.save(self.model.state_dict(), path)
-                logger.info('>> saved: {}'.format(path))
-            if val_f1 > max_val_f1:
-                max_val_f1 = val_f1
+                print('>> saved: {}'.format(path))
             if i_epoch - max_val_epoch >= self.opt.patience:
-                print('>> early stop.')
+                print('>>> early stop.')
+                print('E2E-ABSA >>>', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
                 break
 
         return path
@@ -163,9 +162,9 @@ class Instructor:
                     t_outputs_all = torch.cat((t_outputs_all, t_outputs), dim=0)
 
         acc = n_correct / n_total
-        f1 = metrics.f1_score(t_targets_all.cpu(), torch.argmax(t_outputs_all, -1).cpu(), labels=[0, 1, 2],
-                              average='macro')
-        return acc, f1
+        x, y = t_targets_all.cpu(), torch.argmax(t_outputs_all, -1).cpu()
+        precision, recall, f1_score, support = metrics.precision_recall_fscore_support(x, y, labels=[0, 1, 2], average='micro')
+        return acc, precision, recall, f1_score
 
     def run(self):
         # Loss and Optimizer
@@ -180,8 +179,8 @@ class Instructor:
         self._reset_params()
         best_model_path = self._train(criterion, optimizer, train_data_loader, val_data_loader)
         self.model.load_state_dict(torch.load(best_model_path))
-        test_acc, test_f1 = self._evaluate_acc_f1(test_data_loader)
-        logger.info('>> test_acc: {:.4f}, test_f1: {:.4f}'.format(test_acc, test_f1))
+        test_acc, test_prec, test_recall, test_f1 = self._evaluate_acc_f1(test_data_loader)
+        print('>>> test_acc: {:.4f}, test_precision: {:.4f}, test_recall: {:.4f}, test_f1: {:.4f}'.format(test_acc, test_prec, test_recall, test_f1))
 
 
 def main():
@@ -191,18 +190,18 @@ def main():
         ,'ian','memnet','ram','cabasc','tnet_lf','aoa,mgan','bert_spc','aen_bert','lcf_bert'], help=
     'choose model from lstm,td_lstm,tc_lstm,atae_lstm,ian,memnet,ram,cabasc,tnet_lf,aoa,mgan,bert_spc,aen_bert,lcf_bert')
     parser.add_argument('--dataset', default='twitter', choices=['twitter', 'acl14shortdata', 'SemEval2014',
-                                                                 'SemEval2015', 'SemEval2016', 'twitter-know',
-                                                                 'acl14shortdata-know', 'SemEval2014-know',
-                                                                 'SemEval2015-know', 'SemEval2016-know'], type=str,
-                        help='choose from twitter, acl14shortdata, SemEval2014, SemEval2015, SemEval2016 |-know')
+                                                                 'SemEval2015', 'SemEval2016', 'twitter_know',
+                                                                 'acl14shortdata_know', 'SemEval2014_know',
+                                                                 'SemEval2015_know', 'SemEval2016_know'], type=str,
+                        help='choose from twitter, acl14shortdata, SemEval2014, SemEval2015, SemEval2016 |||_know')
     parser.add_argument('--optimizer', default='adam', type=str)
     parser.add_argument('--initializer', default='xavier_uniform_', type=str)
     parser.add_argument('--lr', default=2e-5, type=float, help='try 5e-5, 2e-5 for BERT, 1e-3 for others')
     parser.add_argument('--dropout', default=0.1, type=float)
     parser.add_argument('--l2reg', default=0.01, type=float)
-    parser.add_argument('--num_epoch', default=20, type=int, help='try larger number for non-BERT models')
+    parser.add_argument('--num_epoch', default=100, type=int, help='try larger number for non-BERT models')
     parser.add_argument('--batch_size', default=16, type=int, help='try 16, 32, 64 for BERT models')
-    parser.add_argument('--log_step', default=10, type=int)
+    parser.add_argument('--log_step', default=100, type=int)
     parser.add_argument('--embed_dim', default=300, type=int)
     parser.add_argument('--hidden_dim', default=300, type=int)
     parser.add_argument('--bert_dim', default=768, type=int)
@@ -257,7 +256,7 @@ def main():
             'train': './datasets/acl14shortdata/train.tsv',
             'test': './datasets/acl14shortdata/dev.tsv'
         },
-        'acl14shortdata-know': {
+        'acl14shortdata_know': {
             'train': './datasets/acl14shortdata/output_know/train.tsv',
             'test': './datasets/acl14shortdata/output_know/dev.tsv'
         },
@@ -265,33 +264,33 @@ def main():
             'train': './datasets/laprest14/train.tsv',
             'test': './datasets/laprest14/dev.tsv'
         },
-        'SemEval2014-know': {
+        'SemEval2014_know': {
             'train': './datasets/laprest14/output_know/train.tsv',
-            'test': './datasets/laprest14/output_know/train.tsv'
+            'test': './datasets/laprest14/output_know/dev.tsv'
         },
         'SemEval2015': {
             'train': './datasets/rest15/train.tsv',
-            'test': './datasets/rest15/train.tsv'
+            'test': './datasets/rest15/dev.tsv'
         },
-        'SemEval2015-know': {
+        'SemEval2015_know': {
             'train': './datasets/rest15/output_know/train.tsv',
-            'test': './datasets/rest15/output_know/train.tsv'
+            'test': './datasets/rest15/output_know/dev.tsv'
         },
         'SemEval2016': {
             'train': './datasets/rest16/train.tsv',
-            'test': './datasets/rest16/train.tsv'
+            'test': './datasets/rest16/dev.tsv'
         },
-        'SemEval2016-know': {
+        'SemEval2016_know': {
             'train': './datasets/rest16/output_know/train.tsv',
-            'test': './datasets/rest16/output_know/train.tsv'
+            'test': './datasets/rest16/output_know/dev.tsv'
         },
         'twitter': {
-            'train': './datasets/acl-14-short-data/train.raw',
-            'test': './datasets/acl-14-short-data/test.raw'
+            'train': './datasets/twitter/train.tsv',
+            'test': './datasets/twitter/dev.tsv'
         },
-        'twitter-know': {
-            'train': './datasets/acl-14-short-data/train.raw',
-            'test': './datasets/acl-14-short-data/test.raw'
+        'twitter_know': {
+            'train': './datasets/twitter/output_know/train.tsv',
+            'test': './datasets/twitter/output_know/train.tsv'
         }
     }
     input_colses = {

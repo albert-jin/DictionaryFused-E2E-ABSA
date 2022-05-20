@@ -136,7 +136,11 @@ class ABSADataset(Dataset):
 
         all_data = []
         for idx, line in enumerate(lines[1:]):
-            [sent, aspect, polarity] = line.split('\t')
+            try:
+              [sent, aspect, polarity] = line.split('\t')
+            except:
+              print('解析样本出现错误, 已忽略:', line.split('\t'))
+              continue
             polarity = polarity.strip()
             aspect = aspect.strip()
             sent = sent.strip()
@@ -162,7 +166,7 @@ class ABSADataset(Dataset):
             text_bert_indices = tokenizer.text_to_sequence("[CLS] " + text_left + " " + aspect + " " + text_right + " [SEP]")
             aspect_bert_indices = tokenizer.text_to_sequence("[CLS] " + aspect + " [SEP]")
 
-            dependency_graph = None
+            dependency_graph = torch.tensor(0.)
             if idx2graph:
                 dependency_graph = np.pad(idx2graph[idx*3], \
                     ((0,tokenizer.max_seq_len-idx2graph[idx*3].shape[0]),(0,tokenizer.max_seq_len-idx2graph[idx*3].shape[0])), 'constant')

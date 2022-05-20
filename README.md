@@ -8,6 +8,8 @@
 > 源数据的仓库地址(本人持续维护)：[DataSource](https://github.com/albert-jin/Git_repository1), (包含了从Oxford dictionary中提取名称解释等描述信息的代码逻辑)
 > 
 > PyTorch-基于字典知识增强的细粒度情感分析实现
+
+>相比LSTM，BERT可记忆的文本长度更长,更适合接受后续长文本的知识描述（对LSTM来说，反而忘记了前面的用户评论信息），因而实验中LSTM相关的实验的加知识效果不佳 
 # 以下为源代码仓库简介
 # ABSA-PyTorch
 
