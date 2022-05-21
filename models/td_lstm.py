@@ -20,8 +20,8 @@ class TD_LSTM(nn.Module):
         x_l, x_r = inputs[0], inputs[1]
         x_l_len, x_r_len = torch.sum(x_l != 0, dim=-1), torch.sum(x_r != 0, dim=-1)
         x_l, x_r = self.embed(x_l), self.embed(x_r)
-        _, (h_n_l, _) = self.lstm_l(x_l, x_l_len)
-        _, (h_n_r, _) = self.lstm_r(x_r, x_r_len)
+        _, (h_n_l, _) = self.lstm_l(x_l, x_l_len.cpu())
+        _, (h_n_r, _) = self.lstm_r(x_r, x_r_len.cpu())
         h_n = torch.cat((h_n_l[0], h_n_r[0]), dim=-1)
         out = self.dense(h_n)
         return out

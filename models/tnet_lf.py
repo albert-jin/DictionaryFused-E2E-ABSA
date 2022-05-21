@@ -59,8 +59,8 @@ class TNet_LF(nn.Module):
         aspect_len = torch.sum(aspect_indices != 0, dim=-1)
         feature = self.embed(text_raw_indices)
         aspect = self.embed(aspect_indices)
-        v, (_, _) = self.lstm1(feature, feature_len)
-        e, (_, _) = self.lstm2(aspect, aspect_len)
+        v, (_, _) = self.lstm1(feature, feature_len.cpu())
+        e, (_, _) = self.lstm2(aspect, aspect_len.cpu())
         v = v.transpose(1, 2)
         e = e.transpose(1, 2)
         for i in range(2):

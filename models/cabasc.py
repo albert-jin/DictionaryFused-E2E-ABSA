@@ -34,8 +34,8 @@ class Cabasc(nn.Module):
         left_len, right_len = torch.sum(x_l != 0, dim=-1), torch.sum(x_r != 0, dim=-1)
         x_l, x_r = self.embed(x_l), self.embed(x_r) 
         
-        context_l, (_, _) =  self.rnn_l(x_l, left_len)        # left, right context : (batch size, max_len, embedds)
-        context_r, (_, _) =  self.rnn_r(x_r, right_len)           
+        context_l, (_, _) =  self.rnn_l(x_l, left_len.cpu())        # left, right context : (batch size, max_len, embedds)
+        context_r, (_, _) =  self.rnn_r(x_r, right_len.cpu())
         
         # Attention weights : (batch_size, max_batch_len, 1) 
         # 0.5 should be a variable according to the paper

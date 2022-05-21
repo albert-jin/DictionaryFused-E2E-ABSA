@@ -27,8 +27,8 @@ class IAN(nn.Module):
 
         context = self.embed(text_raw_indices)
         aspect = self.embed(aspect_indices)
-        context, (_, _) = self.lstm_context(context, text_raw_len)
-        aspect, (_, _) = self.lstm_aspect(aspect, aspect_len)
+        context, (_, _) = self.lstm_context(context, text_raw_len.cpu())
+        aspect, (_, _) = self.lstm_aspect(aspect, aspect_len.cpu())
 
         aspect_len = torch.tensor(aspect_len, dtype=torch.float).to(self.opt.device)
         aspect_pool = torch.sum(aspect, dim=1)

@@ -28,29 +28,25 @@ from models.bert_spc import BERT_SPC
 class Instructor:
     def __init__(self, opt):
         self.opt = opt
-        print('加载Bert...')
+        print(f'>>> 使用设备:{opt.device} 训练.')
         if 'bert' in opt.model_name:
+            print('加载Bert...')
             tokenizer = Tokenizer4Bert(opt.max_seq_len, opt.pretrained_bert_name)
             bert = BertModel.from_pretrained(opt.pretrained_bert_name)
             print('Bert加载完毕.')
-            print(f'>>> 使用设备:{opt.device} 训练.')
             self.model = opt.model_class(bert, opt).to(opt.device)
         else:
             tokenizer = build_tokenizer(
                 fnames=[opt.dataset_file['train'], opt.dataset_file['test']],
-                max_seq_len=opt.max_seq_len,
-                dat_fname='{0}_tokenizer.dat'.format(opt.dataset))
-            print('加载预训练向量...')
+                max_seq_len=opt.max_seq_len)
             embedding_matrix = build_embedding_matrix(
                 word2idx=tokenizer.word2idx,
-                embed_dim=opt.embed_dim,
-                dat_fname='{0}_{1}_embedding_matrix.dat'.format(str(opt.embed_dim), opt.dataset))
-            print('预训练向量加载完毕.')
+                embed_dim=opt.embed_dim)
             self.model = opt.model_class(embedding_matrix, opt).to(opt.device)
 
-        self.trainset = ABSADataset(opt.dataset_file['train'], tokenizer)
+        self.trainset = ABSADataset(opt.dataset_file['train'], tokenizer, opt.model_name)
         print(f'> training dataset count: {len(self.trainset.data)}.')
-        self.testset = ABSADataset(opt.dataset_file['test'], tokenizer)
+        self.testset = ABSADataset(opt.dataset_file['test'], tokenizer, opt.model_name)
         print(f'> testing dataset count: {len(self.testset.data)}.')
         assert 0 <= opt.valset_ratio < 1
         if opt.valset_ratio > 0:

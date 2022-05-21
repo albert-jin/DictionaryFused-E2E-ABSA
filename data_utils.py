@@ -11,28 +11,6 @@ from torch.utils.data import Dataset
 from transformers import BertTokenizer
 
 
-def build_tokenizer(fnames, max_seq_len, dat_fname):
-    if os.path.exists(dat_fname):
-        print('loading tokenizer:', dat_fname)
-        tokenizer = pickle.load(open(dat_fname, 'rb'))
-    else:
-        text = ''
-        for fname in fnames:
-            fin = open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
-            lines = fin.readlines()
-            fin.close()
-            for i in range(0, len(lines), 3):
-                text_left, _, text_right = [s.lower().strip() for s in lines[i].partition("$T$")]
-                aspect = lines[i + 1].lower().strip()
-                text_raw = text_left + " " + aspect + " " + text_right
-                text += text_raw + " "
-
-        tokenizer = Tokenizer(max_seq_len)
-        tokenizer.fit_on_text(text)
-        pickle.dump(tokenizer, open(dat_fname, 'wb'))
-    return tokenizer
-
-
 def _load_word_vec(path, word2idx=None, embed_dim=300):
     fin = open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
     word_vec = {}
@@ -43,26 +21,34 @@ def _load_word_vec(path, word2idx=None, embed_dim=300):
             word_vec[word] = np.asarray(vec, dtype='float32')
     return word_vec
 
+def build_tokenizer(fnames, max_seq_len):
+    text = ''
+    for fname in fnames:
+        fin = open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+        lines = fin.readlines()
+        fin.close()
+        for line in lines[1:]:
+            sent = line.split('\t')[0]
+            text += sent + " "
+    tokenizer = Tokenizer(max_seq_len)
+    tokenizer.fit_on_text(text)
+    return tokenizer
 
-def build_embedding_matrix(word2idx, embed_dim, dat_fname):
-    if os.path.exists(dat_fname):
-        print('loading embedding_matrix:', dat_fname)
-        embedding_matrix = pickle.load(open(dat_fname, 'rb'))
-    else:
-        print('loading word vectors...')
-        embedding_matrix = np.zeros((len(word2idx) + 2, embed_dim))  # idx 0 and len(word2idx)+1 are all-zeros
-        fname = './glove_embeddings/glove.twitter.27B.' + str(embed_dim) + 'd.txt' \
-            if embed_dim != 300 else './glove_embeddings/glove.42B.300d.txt'
-        print(f'>>> 使用 {fname} 作为预训练单词的向量.')
-        word_vec = _load_word_vec(fname, word2idx=word2idx, embed_dim=embed_dim)
-        print('building embedding_matrix:', dat_fname)
-        for word, i in word2idx.items():
-            vec = word_vec.get(word)
-            if vec is not None:
-                # words not found in embedding index will be all-zeros.
-                embedding_matrix[i] = vec
-        pickle.dump(embedding_matrix, open(dat_fname, 'wb'))
+def build_embedding_matrix(word2idx, embed_dim):
+    print('加载预训练向量...')
+    embedding_matrix = np.zeros((len(word2idx) + 2, embed_dim))  # idx 0 and len(word2idx)+1 are all-zeros
+    fname = './glove_embeddings/glove.twitter.27B.' + str(embed_dim) + 'd.txt' \
+        if embed_dim != 300 else './glove_embeddings/glove.42B.300d.txt'
+    print(f'>>> 使用 {fname} 作为预训练单词的向量.')
+    word_vec = _load_word_vec(fname, word2idx=word2idx, embed_dim=embed_dim)
+    for word, i in word2idx.items():
+        vec = word_vec.get(word)
+        if vec is not None:
+            # words not found in embedding index will be all-zeros.
+            embedding_matrix[i] = vec
+    print('预训练向量加载完毕.')
     return embedding_matrix
+
 
 
 def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating='post', value=0):
@@ -125,7 +111,7 @@ class Tokenizer4Bert:
 
 
 class ABSADataset(Dataset):
-    def __init__(self, fname, tokenizer):
+    def __init__(self, fname, tokenizer, model_name):
         fin = open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
         lines = fin.readlines()
         fin.close()
@@ -134,6 +120,7 @@ class ABSADataset(Dataset):
             fin = open(fname+'.graph', 'rb')
             idx2graph = pickle.load(fin)
             fin.close()
+        drop_flag = model_name in ['tc_lstm', 'td_lstm', 'mgan', 'cabasc', 'ram']  # 当遇到前后字段为空的example,这些模型会出bug
 
         all_data = []
         for idx, line in enumerate(lines[1:]):
@@ -146,6 +133,11 @@ class ABSADataset(Dataset):
             aspect = aspect.strip()
             sent = sent.strip()
             text_left, aspect, text_right = [s.lower().strip() for s in sent.partition(aspect)]
+            if aspect == '':
+                continue
+            if drop_flag:
+                if text_left == '' or text_right == '':
+                    continue
 
             text_indices = tokenizer.text_to_sequence(text_left + " " + aspect + " " + text_right)
             context_indices = tokenizer.text_to_sequence(text_left + " " + text_right)
