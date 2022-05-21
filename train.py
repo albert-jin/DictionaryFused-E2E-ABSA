@@ -89,11 +89,11 @@ class Instructor:
                             torch.nn.init.uniform_(p, a=-stdv, b=stdv)
 
     def _train(self, criterion, optimizer, train_data_loader, val_data_loader):
-        max_val_acc = 0
         max_val_f1 = 0
         max_val_epoch = 0
         global_step = 0
         path = None
+        best_info = '>>> val_acc: 0.0, val_precision: 0.0 val_recall: 0.0, val_f1: 0.0'
         for i_epoch in range(self.opt.num_epoch):
             print('>' * 100)
             print('>>> epoch: {}.'.format(i_epoch))
@@ -127,6 +127,7 @@ class Instructor:
             print('>>> val_acc: {:.4f}, val_precision: {:.4f} val_recall: {:.4f}, val_f1: {:.4f}'.format(val_acc, val_prec, val_rec, val_f1))
             if val_f1 > max_val_f1:
                 max_val_f1 = val_f1
+                best_info = '>>> val_acc: {:.4f}, val_precision: {:.4f} val_recall: {:.4f}, val_f1: {:.4f}'.format(val_acc, val_prec, val_rec, val_f1)
                 max_val_epoch = i_epoch
                 if not os.path.exists('state_dict'):
                     os.mkdir('state_dict')
@@ -134,10 +135,10 @@ class Instructor:
                 torch.save(self.model.state_dict(), path)
                 print('>> saved: {}'.format(path))
             if i_epoch - max_val_epoch >= self.opt.patience:
-                print('>>> early stop.')
                 print('E2E-ABSA >>>', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                print('>>> early stop.')
+                print(f'BEST PERFORMANCE(模型最佳表现): {best_info}')
                 break
-
         return path
 
     def _evaluate_acc_f1(self, data_loader):
@@ -163,7 +164,8 @@ class Instructor:
 
         acc = n_correct / n_total
         x, y = t_targets_all.cpu(), torch.argmax(t_outputs_all, -1).cpu()
-        precision, recall, f1_score, support = metrics.precision_recall_fscore_support(x, y, labels=[0, 1, 2], average='micro')
+        precision, recall, f1_score, = metrics.precision_score(x, y, labels=[0, 1, 2], average='micro'),\
+        metrics.recall_score(x, y, labels=[0, 1, 2], average='micro'),metrics.f1_score(x, y, labels=[0, 1, 2], average='micro')
         return acc, precision, recall, f1_score
 
     def run(self):
@@ -178,6 +180,7 @@ class Instructor:
 
         self._reset_params()
         best_model_path = self._train(criterion, optimizer, train_data_loader, val_data_loader)
+        print(f'you can download the best model from {best_model_path}')
         self.model.load_state_dict(torch.load(best_model_path))
         test_acc, test_prec, test_recall, test_f1 = self._evaluate_acc_f1(test_data_loader)
         print('>>> test_acc: {:.4f}, test_precision: {:.4f}, test_recall: {:.4f}, test_f1: {:.4f}'.format(test_acc, test_prec, test_recall, test_f1))
@@ -209,7 +212,7 @@ def main():
     parser.add_argument('--max_seq_len', default=85, type=int)
     parser.add_argument('--polarities_dim', default=3, type=int)
     parser.add_argument('--hops', default=3, type=int)
-    parser.add_argument('--patience', default=5, type=int)
+    parser.add_argument('--patience', default=20, type=int)
     parser.add_argument('--device', default=None, type=str, help='e.g. cuda:0')
     parser.add_argument('--seed', default=1234, type=int, help='set seed for reproducibility')
     parser.add_argument('--valset_ratio', default=0, type=float,
@@ -290,7 +293,7 @@ def main():
         },
         'twitter_know': {
             'train': './datasets/twitter/output_know/train.tsv',
-            'test': './datasets/twitter/output_know/train.tsv'
+            'test': './datasets/twitter/output_know/dev.tsv'
         }
     }
     input_colses = {
