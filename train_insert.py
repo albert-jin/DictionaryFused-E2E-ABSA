@@ -256,40 +256,40 @@ def main():
             'test': './datasets/acl14shortdata/dev.tsv'
         },
         'acl14shortdata_know': {
-            'train': './datasets/acl14shortdata/output_know/train.tsv',
-            'test': './datasets/acl14shortdata/output_know/dev.tsv'
+            'train': './datasets/acl14shortdata/output_know_insert/train.tsv',
+            'test': './datasets/acl14shortdata/output_know_insert/dev.tsv'
         },
         'SemEval2014': {
             'train': './datasets/laprest14/train.tsv',
             'test': './datasets/laprest14/dev.tsv'
         },
         'SemEval2014_know': {
-            'train': './datasets/laprest14/output_know/train.tsv',
-            'test': './datasets/laprest14/output_know/dev.tsv'
+            'train': './datasets/laprest14/output_know_insert/train.tsv',
+            'test': './datasets/laprest14/output_know_insert/dev.tsv'
         },
         'SemEval2015': {
             'train': './datasets/rest15/train.tsv',
             'test': './datasets/rest15/dev.tsv'
         },
         'SemEval2015_know': {
-            'train': './datasets/rest15/output_know/train.tsv',
-            'test': './datasets/rest15/output_know/dev.tsv'
+            'train': './datasets/rest15/output_know_insert/train.tsv',
+            'test': './datasets/rest15/output_know_insert/dev.tsv'
         },
         'SemEval2016': {
             'train': './datasets/rest16/train.tsv',
             'test': './datasets/rest16/dev.tsv'
         },
         'SemEval2016_know': {
-            'train': './datasets/rest16/output_know/train.tsv',
-            'test': './datasets/rest16/output_know/dev.tsv'
+            'train': './datasets/rest16/output_know_insert/train.tsv',
+            'test': './datasets/rest16/output_know_insert/dev.tsv'
         },
         'twitter': {
             'train': './datasets/twitter/train.tsv',
             'test': './datasets/twitter/dev.tsv'
         },
         'twitter_know': {
-            'train': './datasets/twitter/output_know/train.tsv',
-            'test': './datasets/twitter/output_know/dev.tsv'
+            'train': './datasets/twitter/output_know_insert/train.tsv',
+            'test': './datasets/twitter/output_know_insert/dev.tsv'
         }
     }
     input_colses = {
