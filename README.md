@@ -10,6 +10,63 @@
 > PyTorch-基于字典知识增强的细粒度情感分析实现
 
 >相比LSTM，BERT可记忆的文本长度更长,更适合接受后续长文本的知识描述（对LSTM来说，反而忘记了前面的用户评论信息），因而实验中LSTM相关的实验的加知识效果不佳 
+
+## Experiment-1
+
+> 在colab执行 [many_model_absa.ipynb](https://github.com/albert-jin/DictionaryFused-E2E-ABSA/blob/main/many_model_absa.ipynb)， 以获得以下实验结果:
+
+>Before Adding Dict-Knowledge  (metric: F1)
+
+>
+| Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
+|:----------------:| :----: | :----: | :----: | :----: | :----: |
+|       lstm       | 0.7417 |  0.6798   | 0.8293 |  0.8220 |  0.6560    |
+|     td_lstm      | 0.7226 |   0.7203  | 0.8354 |  0.8155 |   0.6846   |
+|     tc_lstm      | 0.7194 |  0.7042   | 0.8481 |  0.8252 |    0.7019   |
+|    atae_lstm     | 0.0664 |   0.7052  | 0.8415 |  0.8305 |    0.7104  |
+|       ian        | 0.7232 |   0.7021  | 0.8293 |  0.8390 |  0.6944    |
+|      memnet      | 0.7518 |  0.6991   | 0.8659 | 0.8305  |   0.6928   |
+|      cabasc      | 0.7032 |  0.7074   | 0.8354 |  0.7670 |   0.6327   |
+| * Bert-based  *  |  |     |  |   |      |
+|     bert_spc     | 0.7607 |  0.7825   | 0.9146  | 0.8729  |   0.7088   |
+|     lcf_bert     | 0.7661 |  0.8085   |  0.9024  |  0.9153 |   0.7216   |
+
+
+>After Adding Dict-Knowledge  (metric: F1)
+
+| Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
+|:----------------:| :----: | :----: | :----: | :----: | :----: |
+|    lstm      | 0.6848 |  0.5770    | 0.8293 |  0.7288 |   0.6256   |
+|   td_lstm    | 0.6848 |    0.7138  | 0.8354 |  0.8058  |   0.6976   |
+|    tc_lstm   | 0.7078 |   0.6913  | 0.8354 |  0.8252 |     0.7180  |
+|   atae_lstm  | 0.0664  |   0.7082  | 0.8537 |   0.8475 |  0.7280      |
+|   ian        | 0.7351 |   0.6383  | 0.8293 | 0.7288  |   0.5408   |
+|   memnet     | 0.7542  |   0.7082   | 0.8537 |  0.8305 |   0.7136   |
+|   cabasc     | 0.7259  |  0.6977  | 0.8354 | 0.8447  |   0.6419    |
+|       * Bert-based  *       |  |     |  |   |      |
+|    bert_spc  | 0.7796 | 0.8550    | 0.9390 |  0.9237 |   0.7504   |
+|   lcf_bert   | 0.7852  |  0.8237   |  0.9024  | 0.9153  |    0.7488   |
+
+分析以上两表的指标变化对比，可以观察到bert相比lstm在知识增强上更有效，原因可能是lstm无法记录长期依赖 
+
+## Experiment-2
+
+> 在colab执行 [deberta_abas.ipynb](https://github.com/albert-jin/DictionaryFused-E2E-ABSA/blob/main/deberta_abas.ipynb)， 以获得以下实验结果:
+
+>Before Adding Dict-Knowledge (metric: F1)
+
+| Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
+|:----------------:| :----: | :----: | :----: | :----: | :----: |
+|    deberta      | 0.62385 |  0.74088   | 0.70332 | 0.8205  |     0.7374  |
+
+>After Adding Dict-Knowledge  (metric: F1)
+
+| Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
+|:----------------:| :----: | :----: | :----: | :----: | :----: |
+|    deberta      | 0.637308 | 0.80607    |  0.70415 |  0.8383 |   0.7842  |
+
+分析以上两表的指标变化对比,观察deberta知识增强效果
+
 # 以下为源代码仓库简介
 # ABSA-PyTorch
 
