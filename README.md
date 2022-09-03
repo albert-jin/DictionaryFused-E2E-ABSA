@@ -15,7 +15,7 @@
 
 > 在colab执行 [many_model_absa.ipynb](https://github.com/albert-jin/DictionaryFused-E2E-ABSA/blob/main/many_model_absa.ipynb)， 以获得以下实验结果:
 
->Before Adding Dict-Knowledge  (metric: F1)
+>Before Adding Dict-Knowledge  (metric: Accuracy)
 
 >
 | Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
@@ -32,7 +32,7 @@
 |     lcf_bert     | 0.7661 |  0.8085   |  0.9024  |  0.9153 |   0.7216   |
 
 
->After Adding Dict-Knowledge  (metric: F1)
+>After Adding Dict-Knowledge ** ConCat**  (metric: Accuracy)
 
 | Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
 |:----------------:| :----: | :----: | :----: | :----: | :----: |
@@ -47,23 +47,51 @@
 |    bert_spc  | 0.7796 | 0.8550    | 0.9390 |  0.9237 |   0.7504   |
 |   lcf_bert   | 0.7852  |  0.8237   |  0.9024  | 0.9153  |    0.7488   |
 
-分析以上两表的指标变化对比，可以观察到bert相比lstm在知识增强上更有效，原因可能是lstm无法记录长期依赖 
+>After Adding Dict-Knowledge ** INSERT **  (metric: Accuracy)
+
+| Models & Dataset |  Twitter  | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
+|:----------------:|:---------:|:------------:| :----: | :----: | :----: |
+|    lstm      |  0.7232   |    0.7112    | 0.8293 |  0.7288 |   0.6976   |
+|   td_lstm    |  0.7232   |    0.7106    | 0.8354  | 0.8155  |   0.6531   |
+|    tc_lstm   |  0.7078   |    0.6817    | 0.8354 | 0.7767  |  0.6531    |
+|   atae_lstm  |  0.7255   |    0.6960    | 0.8415 |  0.8136 |  0.7248    |
+|   ian        |     0.7136      |    0.6535    | 0.8293 | 0.7288  |    0.5408  |
+|   memnet     |    0.7422       |    0.6991    | 0.8537 | 0.7712  |   0.7120   |
+|   cabasc     |     0.7199      |    0.6752    | 0.8354 |  0.7379 |   0.6252   |
+|       * Bert-based  *       |           |              |  |   |      |
+|    bert_spc  |      0.7685     |     0.5745       | 0.9024 |  0.9153 |  0.7568    |
+|   lcf_bert   |     0.7852      |         0.8419      | 0.9512 |  0.8898 |   0.7488   |
+
+分析以上三表的指标变化对比，可以观察到bert相比lstm在知识增强上更有效，原因可能是lstm无法记录长期依赖 
 
 ## Experiment-2
 
 > 在colab执行 [deberta_abas.ipynb](https://github.com/albert-jin/DictionaryFused-E2E-ABSA/blob/main/deberta_abas.ipynb)， 以获得以下实验结果:
 
->Before Adding Dict-Knowledge (metric: F1)
+>Before Adding Dict-Knowledge (metric: Best Metric & ACC & F1)
 
-| Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
-|:----------------:| :----: | :----: | :----: | :----: | :----: |
-|    deberta      | 0.62385 |  0.74088   | 0.70332 | 0.8205  |     0.7374  |
+| deberta & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
+|:-----------------:| :----: | :----: |:------------:| :----: | :----: |
+|        Best Metric         | 0.68487 |  0.7798   |   0.80898    | 0.88482  |     0.73911  |
+|        ACC         | 0.75118 |  0.8187   |   0.91463    | 0.94915  |     0.7408  |
+|        F1         | 0.62385 |  0.74088   |   0.70332    | 0.8205  |     0.7374  |
 
->After Adding Dict-Knowledge  (metric: F1)
+>After Adding Dict-Knowledge Concat (metric: Best Metric & ACC & F1)
 
-| Models & Dataset |  Twitter   | semeval 2014 | semeval 2015 |   semeval 2016 |   acl2014data    |
-|:----------------:| :----: | :----: | :----: | :----: | :----: |
-|    deberta      | 0.637308 | 0.80607    |  0.70415 |  0.8383 |   0.7842  |
+| deberta & Dataset | Twitter  | semeval 2014 | semeval 2015 | semeval 2016 | acl2014data  |
+|:----------------:|:--------:|:------------:|:------------:|:------------:|:------------:|
+|        Best Metric         |    0.69265      |     0.83354         |      0.80329        |        0.8937      |    0.7857          |
+|        ACC         |      0.75829    |       0.86102       |       0.90243       |    0.94915          |     0.7872         |
+|        F1         | 0.637308 |   0.80607    |   0.70415    |    0.8383    |    0.7842    |
+
+
+>After Adding Dict-Knowledge INSERT (metric: Best Metric & ACC & F1)
+
+| deberta & Dataset | Twitter  |    semeval 2014    | semeval 2015 | semeval 2016 |    acl2014data     |
+|:----------------:|:--------:|:------------------:|:------------:|:------------:|:------------------:|
+|        Best Metric         |    0.7118      |      0.83204       |      0.79206       |        0.8764      |         0.79226          |
+|        ACC         |      0.7701    |      0.8610       |       0.914634       |    0.9322         |      0.77014       |
+|        F1         | 0.6535 |          0.8030          |    0.71828    |    0.8206    |      0.653506      |
 
 分析以上两表的指标变化对比,观察deberta知识增强效果
 
