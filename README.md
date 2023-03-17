@@ -95,6 +95,23 @@
 
 分析以上两表的指标变化对比,观察deberta知识增强效果
 
+If this work helps you, please cite it. Thanks!
+
+```
+@article{JIN2023103260,
+title = {Back to common sense: Oxford dictionary descriptive knowledge augmentation for aspect-based sentiment analysis},
+journal = {Information Processing & Management},
+volume = {60},
+number = {3},
+pages = {103260},
+year = {2023},
+issn = {0306-4573},
+doi = {https://doi.org/10.1016/j.ipm.2022.103260},
+url = {https://www.sciencedirect.com/science/article/pii/S0306457322003612},
+author = {Weiqiang Jin and Biao Zhao and Liwen Zhang and Chenxing Liu and Hang Yu},
+}
+```
+
 # 以下为源代码仓库简介
 # ABSA-PyTorch
 
